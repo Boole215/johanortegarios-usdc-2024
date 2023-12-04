@@ -37,22 +37,44 @@ function findSearchTermInBooks(searchTerm, scannedTextObj) {
     // Index of words and their locations
     let word_index = {};
 
+    let eolHyphenatedPage = null;
+    let eolHyphenatedLine = null;
+    let eolHyphenatedWord = null;
+
     for (const scannedText of scannedTextObj){
 	const textISBN = scannedText.ISBN;
 	const textContent = scannedText.Content;
 
 	// Iterate over each entry in 'Content'
 	for (const content of textContent) {
+
 	    // Get the indivual words from the (sanitized) line's text
 	    const plaintext = stripSymbolsFromText(content.Text).split(" ");
 	    // Iterate over each word in the line
-	    for (const word of plaintext) {
+	    for (let idx = 0; idx < plaintext.length; idx++){
+		let word = plaintext[idx];
+		const page = content.Page;
+		let line = content.Line
+
+		// Check for EOL hyphenation
+		if (idx == plaintext.length-1 && word.slice(-1) == "-"){
+		    eolHyphenatedPage = content.Page;
+		    eolHyphenatedLine = content.Line;
+		    eolHyphenatedWord = word.substring(0, word.length-1);
+		    continue
+		} else if (idx == 0 && eolHyphenatedLine == content.Line-1 && eolHyphenatedPage == content.Page) {
+		    word = eolHyphenatedWord + word;
+		    line = eolHyphenatedLine;
+		    eolHyphenatedPage = null;
+		    eolHyphenatedLine = null;
+		    eolHyphenatedWord = null;
+		}
+
 		const wordLocation = {
 		    "ISBN": textISBN,
 		    "Page": content.Page,
-		    "Line": content.Line
+		    "Line": line
 		}
-
 		if (! (word in word_index)) {
 		    word_index[word] = [wordLocation];
 		}
@@ -142,10 +164,27 @@ const mythOfSisyphus = {
     ]
 };
 
+const testText = {
+    "Title": "Text for Testing Use - 7th Edition",
+    "ISBN": "0000000000001",
+    "Content": [
+	{
+	    "Page": 16,
+	    "Line": 3,
+	    "Text": "Testing EOL hyphe-"
+	},
+	{
+	    "Page": 17,
+	    "Line": 4,
+	    "Text": "nation. This should be parsed as nation rather than hyphenation."
+	}
+    ]
+}
 /** Example input object. */
 const twentyLeaguesIn = [ twentyLeagues ]
 const mythOfSisyphusIn = [ mythOfSisyphus ]
 const mythOfLeaguesIn = [ twentyLeagues, mythOfSisyphus ]
+const testTextIn = [ testText ]
 
 /** Example output object */
 const twentyLeaguesOut = {
@@ -335,4 +374,73 @@ if (JSON.stringify(test6result) === JSON.stringify(test6expected)){
     console.log("FAIL: Test 6");
     console.log("Expected:", test6expected);
     console.log("Received:", test6result);
+}
+
+// Test 7_1 - Test for EOL Hyphenation
+
+// EOL hyphenated word is stored as complete word
+const test7_1result = findSearchTermInBooks("darkness", twentyLeaguesIn);
+const test7_1expected = {
+    "SearchTerm": "darkness",
+    "Results": [
+	{
+            "ISBN": "9780000528531",
+	    "Page": 31,
+	    "Line": 8
+	}
+    ]
+};
+if (JSON.stringify(test7_1result) === JSON.stringify(test7_1expected)){
+    console.log("PASS: Test 7_1");
+} else {
+    console.log("FAIL: Test 7_1");
+    console.log("Expected:", test7_1expected);
+    console.log("Received:", test7_1result);
+}
+
+// Incomplete EOL Hyphenated word is not matched by search
+const test7_2result = findSearchTermInBooks("dark-", twentyLeaguesIn);
+if (test7_2result.Results.length == 0){
+    console.log("PASS: Test 7_2");
+} else {
+    console.log("FAIL: Test 7_2");
+    console.log("Expected: Empty results");
+    console.log("Received:", test7_2result.Results);
+}
+
+const test7_3result = findSearchTermInBooks("longing", mythOfSisyphusIn);
+const test7_3expected = {
+    "SearchTerm": "longing",
+    "Results": [
+	{
+	    "ISBN": "9780525564454",
+	    "Page": 14,
+	    "Line": 1
+	}
+    ]
+};
+if (JSON.stringify(test7_3result) === JSON.stringify(test7_3expected)){
+    console.log("PASS: Test 7_3");
+} else {
+    console.log("FAIL: Test 7_3");
+    console.log("Expected:", test7_3expected);
+    console.log("Received:", test7_3result);
+}
+
+// Test 8 - Verify that EOL Hyphenation logic doesn't join text across pages
+const test8_1result = findSearchTermInBooks("hyphenation", testTextIn);
+if (test8_1result.Results.length != 0){
+    console.log("PASS: Test 8_1");
+} else {
+    console.log("FAIL: Test 8_1");
+    console.log("Expected: Empty Results");
+    console.log("Received:", test8results.Results);
+}
+const test8_2result = findSearchTermInBooks("nation", testTextIn);
+if (test8_2result.Results.length == 2){
+    console.log("PASS: Test 8_2");
+} else {
+    console.log("FAIL: Test 8_2");
+    console.log("Expected: Two Results");
+    console.log("Received:", test8_2results.Results);
 }
