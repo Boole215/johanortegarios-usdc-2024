@@ -21,7 +21,10 @@ function stripSymbolsFromText(text) {
   // First, we replace characters that aren't alphanumeric, hyphens, apostrophes, with spaces.
   //    We keep hyphens because some words must be hyphenated to be correct.
   // Then, we reduce groups of multiple spaces to single spaces.
-  let sanitized = text.replace(/[^a-zA-Z0-9-']/g, " ").replace(/\s+/g, " ");
+  let sanitized = text
+    .replace(/[^a-zA-Z0-9-']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   return sanitized;
 }
 
@@ -220,7 +223,7 @@ const testSanitize1result = stripSymbolsFromText(
 );
 const testSanitize1expected =
   "the falsity of our own thesis for the contrary assertion";
-if (testSanitize1result == testSanitize1expected) {
+if (testSanitize1result === testSanitize1expected) {
   console.log("PASS: Test 1");
 } else {
   console.log("FAIL: Test 1");
@@ -231,12 +234,25 @@ if (testSanitize1result == testSanitize1expected) {
 // TEST 2 - Stripping Em-dashes
 const testSanitize2result = stripSymbolsFromText("I am interested—let me re-");
 const testSanitize2expected = "I am interested let me re-";
-if (testSanitize2result == testSanitize2expected) {
+if (testSanitize2result === testSanitize2expected) {
   console.log("PASS: Test 2");
 } else {
   console.log("FAIL: Test 2");
   console.log("Expected:", testSanitize2result);
   console.log("Received:", testSanitize2expected);
+}
+
+// TEST 3 - Consecutive Symbols
+const testSanitize3result = stripSymbolsFromText(
+  "Multiple symbols———and we continue!",
+);
+const testSanitize3expected = "Multiple symbols and we continue";
+if (testSanitize3result === testSanitize3expected) {
+  console.log("PASS: Test 3");
+} else {
+  console.log("FAIL: Test 3");
+  console.log("Expected:", testSanitize3result);
+  console.log("Received:", testSanitize3expected);
 }
 
 /* We have provided two unit tests. They're really just `if` statements that
